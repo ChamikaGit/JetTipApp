@@ -23,23 +23,26 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun CustomInputField(
     modifier: Modifier = Modifier,
-    valeState: MutableState<String>,
+    valueState: MutableState<String>,
     labelId: String,
     enabled: Boolean = true,
     isSingleLine: Boolean = true,
     keyboardType: KeyboardType = KeyboardType.Number,
     imeAction: ImeAction = ImeAction.Next,
     onAction: KeyboardActions = KeyboardActions.Default,
-    leadingIcon: @Composable () -> Unit
+    leadingIcon: @Composable (() -> Unit)? = null,
+    onValueChange: (String) -> Unit ={}
 ) {
     OutlinedTextField(
         modifier = modifier.padding(bottom = 10.dp, start = 10.dp, end = 10.dp),
-        value = valeState.value,
+        value = valueState.value,
         onValueChange = {
-            valeState.value = it
+            valueState.value = it
+            //onValueChange is optional
+            onValueChange(it)
         },
         label = { Text(text = labelId) },
-        leadingIcon = leadingIcon,
+        leadingIcon = leadingIcon?.let { leadingIcon },
         textStyle = TextStyle(fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground),
         enabled = enabled,
         singleLine = isSingleLine,

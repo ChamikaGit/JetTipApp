@@ -1,6 +1,7 @@
 package com.chamiapps.jettipapplication
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -26,6 +27,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -61,6 +64,12 @@ fun MyApp() {
 
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
+
+    val amountPerPersonState =  remember {
+        mutableStateOf("0")
+    }
+
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -70,13 +79,14 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .fillMaxHeight()
         ) {
-            TopHeader()
-            MainContent()
+            TopHeader(totalPerPerson = amountPerPersonState.value.toDouble())
+            BillForm(){
+                amountPerPersonState.value = it
+            }
         }
     }
 }
 
-@Preview
 @Composable
 fun TopHeader(modifier: Modifier = Modifier, totalPerPerson: Double = 0.0) {
 
@@ -122,8 +132,7 @@ fun TopHeader(modifier: Modifier = Modifier, totalPerPerson: Double = 0.0) {
 
 @Preview
 @Composable
-fun MainContent(modifier: Modifier = Modifier) {
-
+fun BillForm(modifier: Modifier = Modifier, onNewValueChange:(String)->Unit = {}) {
     val totalBillState = remember {
         mutableStateOf("")
     }
@@ -151,7 +160,7 @@ fun MainContent(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(10.dp)
         ) {
 
-            CustomInputField(valeState = totalBillState, labelId = "Enter Bill",
+            CustomInputField(modifier = Modifier.fillMaxWidth(), valueState = totalBillState, labelId = "Enter Bill",
                 leadingIcon = {
                     Icon(imageVector = Icons.Rounded.Money, contentDescription = "Money Icon")
                 },
@@ -161,12 +170,14 @@ fun MainContent(modifier: Modifier = Modifier) {
                     } else {
                         keyBoardController?.hide()
                     }
+                },
+                onValueChange = { newValue->
+                    onNewValueChange(newValue.trim())
                 })
-
-
         }
 
     }
+
 }
 
 
