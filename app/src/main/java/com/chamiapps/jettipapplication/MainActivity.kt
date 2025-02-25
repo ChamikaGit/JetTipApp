@@ -27,11 +27,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import com.chamiapps.jettipapplication.components.CustomInputField
 import com.chamiapps.jettipapplication.ui.theme.JetTipApplicationTheme
 import com.chamiapps.jettipapplication.ui.theme.PurpleGrey40
+import com.chamiapps.jettipapplication.util.calculateTipAmount
+import com.chamiapps.jettipapplication.util.calculateTotalAmountPerPerson
 import com.chamiapps.jettipapplication.widget.RoundIconButton
 
 class MainActivity : ComponentActivity() {
@@ -59,6 +65,7 @@ class MainActivity : ComponentActivity() {
 fun MyApp() {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = Color(0xFFF0E8A8)
     ) { innerPadding ->
         MainScreen(Modifier.padding(innerPadding))
     }
@@ -66,6 +73,9 @@ fun MyApp() {
 
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
+
+    var totalAmountPerPersonState by remember { mutableStateOf(0.0) }
+
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -76,9 +86,10 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .fillMaxHeight()
         ) {
-            TopHeader()
-            BillForm { amount ->
-                Log.e("Bill", "MainScreen: bill amount $amount")
+            TopHeader(totalPerPerson = totalAmountPerPersonState)
+            BillForm { perPersonAmount ->
+                totalAmountPerPersonState = perPersonAmount
+                Log.e("Bill", "MainScreen: bill amount $perPersonAmount")
             }
         }
     }
@@ -91,7 +102,7 @@ fun TopHeader(modifier: Modifier = Modifier, totalPerPerson: Double = 0.0) {
 
     Card(
         modifier = modifier
-            .padding(8.dp)
+            .padding(16.dp)
             .fillMaxWidth()
             .height(160.dp),
         shape = RoundedCornerShape(corner = CornerSize(16.dp)),
@@ -129,7 +140,7 @@ fun TopHeader(modifier: Modifier = Modifier, totalPerPerson: Double = 0.0) {
 
 @Preview
 @Composable
-fun BillForm(modifier: Modifier = Modifier, onNewValueChange: (String) -> Unit = {}) {
+fun BillForm(modifier: Modifier = Modifier, onNewValueChange: (Double) -> Unit = {}) {
     val totalBillState = remember {
         mutableStateOf("")
     }
@@ -140,11 +151,40 @@ fun BillForm(modifier: Modifier = Modifier, onNewValueChange: (String) -> Unit =
 
     val keyBoardController = LocalSoftwareKeyboardController.current
 
+    var splitByState by remember {
+        mutableStateOf(1)
+    }
+
+    val range = IntRange(start = 1, endInclusive = 100)
+
+    var sliderPositionState by remember {
+        mutableStateOf(0f)
+    }
+
+    val tipPercentage = (sliderPositionState * 100).toInt()
+
+    var tipAmountState by remember {
+        mutableStateOf(0.0)
+    }
+
+    var totalAmountPerPersonState by remember {
+        mutableStateOf(0.0)
+    }
+
+    fun updateTotalAmountPerPerson() {
+        totalAmountPerPersonState = calculateTotalAmountPerPerson(
+            tipPercentage = tipPercentage,
+            totalBillState = totalBillState.value.toDouble(),
+            numberOfPeople = splitByState
+        )
+
+        onNewValueChange(totalAmountPerPersonState)
+    }
+
     Card(
         modifier = modifier
             .padding(8.dp)
-            .fillMaxWidth()
-            .height(400.dp),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(corner = CornerSize(16.dp)),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -175,48 +215,113 @@ fun BillForm(modifier: Modifier = Modifier, onNewValueChange: (String) -> Unit =
                     }
                 },
                 onValueChange = { newValue ->
-                    onNewValueChange(newValue.trim())
+//                    onNewValueChange(newValue.trim())
                 })
 
             //This used to validate the layout visibility
-//            if (isValidState) {
-            Row(
-                modifier = Modifier.padding(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
-            ) {
-                Text(
-                    modifier = Modifier.align(alignment = Alignment.CenterVertically),
-                    text = "Split",
-                    style = MaterialTheme.typography.headlineSmall.copy(color = Color.Black)
-                )
-
-                Spacer(modifier = Modifier.width(80.dp))
-
+            if (isValidState) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 3.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
                 ) {
-                    RoundIconButton(onClick={
-
-                    })
-                    Spacer(modifier = Modifier.width(20.dp))
                     Text(
-                        text = "1",
+                        modifier = Modifier.align(alignment = Alignment.CenterVertically),
+                        text = "Split",
                         style = MaterialTheme.typography.headlineSmall.copy(color = Color.Black)
                     )
-                    Spacer(modifier = Modifier.width(20.dp))
-                    RoundIconButton(buttonIcon = Icons.Rounded.Remove, onClick = {
 
-                    })
+                    Spacer(modifier = Modifier.width(80.dp))
+
+                    Row(
+                        modifier = Modifier.padding(horizontal = 3.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RoundIconButton(buttonIcon = Icons.Rounded.Remove, onClickButton = {
+                            if (splitByState > 1) {
+                                splitByState = splitByState.minus(1)
+                                updateTotalAmountPerPerson()
+                            }
+
+                        })
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Text(
+                            text = splitByState.toString(),
+                            style = MaterialTheme.typography.headlineSmall.copy(color = Color.Black)
+                        )
+                        Spacer(modifier = Modifier.width(20.dp))
+                        RoundIconButton(onClickButton = {
+                            if (splitByState < range.last) {
+                                splitByState = splitByState.plus(1)
+                                updateTotalAmountPerPerson()
+                            }
+
+                        })
+                    }
+                }
+
+                Row(modifier = Modifier.padding(10.dp)) {
+                    Text(
+                        text = "Tip", modifier = Modifier.align(Alignment.CenterVertically),
+                        style = MaterialTheme.typography.headlineSmall.copy(color = Color.Black)
+                    )
+
+                    Spacer(modifier = Modifier.width(200.dp))
+
+                    Text(
+                        text = "$${tipAmountState}",
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                        style = MaterialTheme.typography.headlineSmall.copy(color = Color.Black)
+                    )
+
                 }
 
 
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+
+
+                    Slider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        value = sliderPositionState,
+                        onValueChange = { newValue ->
+                            sliderPositionState = newValue
+                            Log.e("BILL", "BillForm: new slider value is $newValue")
+
+                            tipAmountState = calculateTipAmount(
+                                totalBillState = totalBillState.value.toDouble(),
+                                tipPercentage = tipPercentage
+                            )
+
+                            Log.e("BILL", "BillForm: totalTipPerPerson $tipAmountState")
+
+                            updateTotalAmountPerPerson()
+
+                        },
+                        steps = 5,
+                        colors = SliderDefaults.colors(
+                            activeTrackColor = Color.DarkGray,
+                            inactiveTrackColor = Color.LightGray,
+                            inactiveTickColor = Color.Black,
+                            activeTickColor = Color.White
+                        )
+                    )
+                    Text(
+                        text = "${tipPercentage}%",
+                        style = MaterialTheme.typography.headlineSmall.copy(color = Color.Black)
+                    )
+
+
+                }
+
+
+            } else {
+                Box {}
             }
-//            } else {
-//                Box {}
-//            }
         }
 
     }
