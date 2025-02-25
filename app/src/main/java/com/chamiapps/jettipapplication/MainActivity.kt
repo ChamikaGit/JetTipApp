@@ -75,6 +75,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
             modifier = modifier.fillMaxSize()
         ) {
             TopHeader(totalPerPerson = totalAmountPerPerson)
+
             BillForm(
                 totalBill = totalBill,
                 onTotalBillChange = {
@@ -215,7 +216,9 @@ fun BillForm(
                         steps = 5,
                         colors = SliderDefaults.colors(
                             activeTrackColor = Color.DarkGray,
-                            inactiveTrackColor = Color.LightGray
+                            inactiveTrackColor = Color.LightGray,
+                            inactiveTickColor = Color.Black,
+                            activeTickColor = Color.White
                         )
                     )
                     Text("${(sliderPosition * 100).toInt()}%", style = MaterialTheme.typography.headlineSmall.copy(color = Color.Black))
